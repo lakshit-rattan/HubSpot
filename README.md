@@ -1,5 +1,7 @@
 # HubSpot
-## Amazing Social Networking Image Sharing Application using MERN Stack Logic# Getting Started with Create NW.js React App
+## Amazing Social Networking Image Sharing Application using MERN Stack Logic
+
+## Getting Started with Create React App
 
 ### This project was bootstrapped with Create React App
 
