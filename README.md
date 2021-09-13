@@ -1,2 +1,2 @@
 # HubSpot
- Amazing Social Networking Image Sharing Application using MERN Stack Logic
+## Amazing Social Networking Image Sharing Application using MERN Stack Logic
