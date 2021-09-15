@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
  * called 'routes' and then add all the required routes into different files into that folder and then LINK those files to the app.js file.
  */
 const placeRoutes = require('./routes/places-routes');
+const { response } = require('express');
 
 const app = express();
 
@@ -18,4 +19,28 @@ app.use('/api/places',placeRoutes);
 // '/api' -> INVALID
 // The Route filter that we add in App.js GET method, has to be prepended to the route that is specified here. 
 // so if we want to have GET requests for say,'/api/places', we must not repeat it in app.js, rather take the main filter to app.js and put the filter of whatever is going to AFTER the main filter, i.e, whatever is going to be after '/api/places'. can be anything 
+
+
+/**Special error handling middleware function.
+ * As you can see, it has 4 arguments, and whenever we have 4 arguments in a function, the compiler will automatically understand that this is the special error handline function 
+ * 
+ * we will first check inside it, if any response has been already sent back or not(the if condition). if it has been, then we need not send another response, and will pass the error argument into the next function
+ * 
+ * then we will check for a 'code' property in the error object, if it is present, given in the other files. if not, assign it a default status code value of 500(error 500 -> something went wrong on the server)
+ * Then we will be sending back a json response with a message proerty, because every error that we send back from the api, should have the message property, which the attached client can then use to show the error message that we can use. if we have an error message, then we use it, else, we give it a default error ahead of the OR statement
+ * Now that is our body. and now, we will trigger it in the places-route file, in 2 ways:
+ * 1. we a thorw a new error there
+ * 2. or, we call next(), and pass the error to it. both work.
+ * But the difference lies in the fact that, if we would be in some asynchronous code, which is not the case right now here, then our way 1, throwing exception, will be the best option to work with. But if we ARE in some ASYNCHRONOUS code here, then we will have to use next(error) object approach
+ * Implementation will be shown in both ways, but later, only next() will be used because the code will be asynchronous
+*/ 
+app.use((error,req,res,next) => {
+    if (res.headerSent) {
+        return next(error);
+    }
+    res.status(error.code || 500);
+    res.json({message:error.message || 'An unknown error occurred'});
+})
+
+
 app.listen(5000);
