@@ -4,22 +4,10 @@ const express = require("express");
 //importing the http-error file class for error-handling. now we just have to create the bject sof this class here wherever we want and then pass them the errorcode and the error message
 const HttpError = require("../models/http-error");
 
+const placeControllers = require("../controllers/places-controller");
+
 //using a special function called router in express
 const router = express.Router();
-
-const DUMMY_PLACES = [
-  {
-    id: "p1",
-    title: "Empire State Building",
-    description: "One of the most famous Sky-Scrapers in the World",
-    location: {
-      lat: 40.7484474,
-      lng: -73.9871516,
-    },
-    address: "20 W 34th St, New York, NY 10001",
-    creator: "u1",
-  },
-];
 
 //setting the GET method for the '/' path for the router const
 //We actually now want to have a GET request, where the ID is part of the URL. the idea is that we send the request to the API '/places/p1' for eg, and that gives us the data for the place for the ID p1
@@ -30,65 +18,11 @@ const DUMMY_PLACES = [
  * ExpressJS covers this too. we get the pid by using the 'Request' object and there we will have a 'params' property
  * 'params' -> this property is added by ExpressJS, which in the end, holds an object, where our dynamic segments are stored as KEYS, and it's values, will be the values entered by the user in place of that dynamic segment. eg- {pid:'p1'}
  */
-// The '/api/places/:pid' route
-router.get("/:pid", (req, res, next) => {
-  const placeid = req.params.pid;
+// The '/api/places/:pid' route, after the route, it is referring to the places-controller.js function pertaining to the logic that needs to be used here
+router.get("/:pid", placeControllers.getPlaceById);
 
-  const place = DUMMY_PLACES.find((p) => {
-    return p.id === placeid;
-  });
-
-  // if place undefined then send a 404 response status
-  // for that, we use the status function and json method to send a response message
-  /**now here we just introduced a bug in the system. Now considering that this 404 status message is printed, the compiler WILL not stop here.
-   * Instead, it will then go outside and send the actual response down below, which will result in 2 responses to 1 request, leading to an error
-   * So for this, either we will send the normal 200 response, inside the else block, or, we will wrap this 404 statement inside a return, not
-   * because we want to return anything, but because anything after the return is not exceuted at all.
-   */
-  if (!place) {
-    // res
-    //   .status(404)
-    //   .json({ message: "Could not find a place for the provided id." });
-    // NEW APPROACH - using throw to trigger
-
-    // const error = new Error('Could not find a place for the provided ID.');
-    // error.code = 404;
-    // throw error;
-
-    throw new HttpError("Could not find a place for the provided id.", 404);
-  } else {
-    //this is a special method, which sends back a JSON response to wherever it is imported, and whatever written in the json, is parsed accordingly
-    res.json({ place }); // ==> {place} = {place:place} automatically. JS
-  }
-});
-
-//implementing the '/api/places/user/:pid' route
-
-router.get("/user/:uid", (req, res, next) => {
-  const userid = req.params.uid;
-
-  const user = DUMMY_PLACES.find((p) => {
-    return p.creator === userid;
-  });
-
-  if (!user) {
-    //   res
-    //     .status(404)
-    //     .json({ message: "Could not find a place for the provided user-id." });
-    // NEW APPROACH - using next() to trigger
-
-    // const error = new Error('Could not find a place for the provided user-id.');
-    //   error.code = 404;
-    //    next(error);
-    
-    //just simply create object of HttpError class and then pass them the arguments which will be displayed on the forthcoming error
-    return next(
-      new HttpError("Could not find a place for the provided user id.", 404),
-    );
-  } else {
-    res.json({ user });
-  }
-});
+//implementing the '/api/places/user/:pid' route. after the route, it is referring to the places-controller.js function pertaining to the logic that needs to be used here
+router.get("/user/:uid",placeControllers.getPlaceByUserId);
 
 //Exporting the const named router. this is the general syntax for exporting.
 module.exports = router;
