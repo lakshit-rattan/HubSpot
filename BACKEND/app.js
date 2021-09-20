@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
  * called 'routes' and then add all the required routes into different files into that folder and then LINK those files to the app.js file.
  */
 const placeRoutes = require('./routes/places-routes');
-const { response } = require('express');
+const HttpError = require('./models/http-error');
 
 const app = express();
 
@@ -25,6 +25,18 @@ app.use('/api/places',placeRoutes);
 // '/api' -> INVALID
 // The Route filter that we add in App.js GET method, has to be prepended to the route that is specified here. 
 // so if we want to have GET requests for say,'/api/places', we must not repeat it in app.js, rather take the main filter to app.js and put the filter of whatever is going to AFTER the main filter, i.e, whatever is going to be after '/api/places'. can be anything 
+
+
+//This middleware is here for handling all the UN-Supported requests that are hit to the network. Handling errors for unsupported routes.
+//Just a normal middleware, it only runs if we didn't a response in one of our routes before, because if we do send a response, we call next() and no other middleware after that middleware
+//will be executed. So this middleware willo only be reached if we didn't get any previous response to it, and that can only be a request which we don't want to handle
+//Inside, we just want to give a 404 error along with a message, which is why we will use the default error handler(http-error.js) for that purpose. 
+app.use((req,res,next) => {
+    const error = new HttpError('Could not find this route.', 404);
+    throw error;
+});
+
+
 
 
 /**Special error handling middleware function.
