@@ -10,6 +10,12 @@ const { response } = require('express');
 
 const app = express();
 
+//this will parse any incoming requests body and extract any JSON data which is in there, convert it into regular JS Data structures like objects and arrays, and then call next() automatically so that we reach the next middlewares which are our own custom routes and then also add the JSON data here. 
+// So in placescontroller.js, we will now be able to get the parsed body for the POST request, which was the reason that we used it here using the req.body property
+app.use(bodyParser.json());
+
+
+
 //Now there is one thing that we need to take care of. that is, according to the api's that we need, we have to have 2 SET of API's. '/api/places/....' and '/api/users/....' 
 // so we have to add a FILTER on this middleware, such that it is executed only on the path that we specify. so for use(), it is not necessary to give the path filter, but we CAN.
 // This filter that we put, will also not be treated as, the route should be EXACTLY as specified in the filter, but have to just START from it. can be more than that also.

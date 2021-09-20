@@ -24,6 +24,12 @@ router.get("/:pid", placeControllers.getPlaceById);
 //implementing the '/api/places/user/:pid' route. after the route, it is referring to the places-controller.js function pertaining to the logic that needs to be used here
 router.get("/user/:uid",placeControllers.getPlaceByUserId);
 
+/**Adding a POST route. the address here will be / because we don't have any specific route here for the POST request in accordance to the table that we drew for the routes
+*/
+router.post('/', placeControllers.createPlace);
+
+
+
 //Exporting the const named router. this is the general syntax for exporting.
 module.exports = router;
 

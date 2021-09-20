@@ -1,5 +1,7 @@
 const HttpError = require("../models/http-error");
 
+//a 3rd party npm package used to generate dynamic unique id's. there are different versions of the id's it generates, so the version we need is v4, which also has a timestamp component in it
+const { v4: uuidv4 } = require('uuid');
 
 const DUMMY_PLACES = [
   {
@@ -89,6 +91,69 @@ const getPlaceByUserId = (req, res, next) => {
   }
 };
 
+
+const createPlace = (req,res,next) => {
+  /**for the POST request, we expect to have the data inside the BODY of the post request
+  Because whilst the GET requests don't have a request body, POST requests DO, and we ENCODE the data we want to send with the POST request into the BODY of the post request
+  Now to get the data, out of the body, we can take help of a package called 'body-parser' we learnt about earlier. so we add a new middleware in app.js 
+  and we will do it before it reaches the places-routes.js file, because we first want to parse the body, and then reach the routes where we want to parse the data so here, hume kata kataaya data already miljaayega. 
+  so we go to app.js from here.  So in places-controller.js, we will now be able to get the parsed body for the POST request, which we will use using the req.body property
+  We here will user object destructuring to filter out only the data that we need here out of the data that we recieve in the POST request
+  */
+
+  // The logic down below will later be replaces by some MongoDB logic, but temporarily working logic would be provided for the array
+  const {title, description, coordinates, address, creator} = req.body;
+  // short form for -> const title = req.body.title, const description = req.body.description ...............
+  
+  const createdPlace = {
+    //uuid() generates a unique id field and stores it in the 'id' field
+    id: uuidv4(),
+    title,
+    description,
+    location:coordinates,
+    address,
+    creator
+  }
+
+  //we need a unique id, which we will make from an extra npm package -> uuid which is especially used to generate unique ids
+
+  // for adding the data into the database
+  DUMMY_PLACES.push(createdPlace); 
+//DUMMY_PLACES.unshift(createdPlace); => if we want to push it as the first element in the array
+
+//After creating the new location successfully we now have to send back some response 
+res.status(201).json({place:createdPlace}); 
+//200 -> standard status code for a successfull execution in general, but when we create something new, we send back 201
+//201 -> Standard status code that we send back when there is something created successfully on the server
+//Also we return the new place object that we created back to the app.js
+
+/** 
+ * Now the focus lies on the fact that HOW will we send the POST request here. Why ? 
+ * because if we modify url to /api/places, we get the "Cannot GET /api/places". But why ?
+ * the reason is, that whenever we self modify the url in the address bar, it is always BY DEFAULT, considered 
+ * to be a GET request, because we have no GET route specified for the route, we have a POST route.
+ * To send a POST request, we can add some JS code that can do our work, but it won't work properly either, 
+ * so for now, we'll be using for this purpose, the POSTMAN software, which allows us to test and send requests to the API's
+ * So now when we send the request in postman like :
+ * {
+    "title":"New York Stock Exchange",
+    "description":"Where the money lives",
+    "creator":"u2",
+    "address":"11 Wall St, New York, NY 10005",
+    "coordinates": {
+        "lat": 40.7063069,
+        "long": -74.01039
+    }
+  }
+ject of place in the dummy places array and we can validate this by going to /places/api/u2 where we will see the details  in JSON format, and send this, this adds a new ob
+Please note - that this storage in the array, will be TEMPORARY. it will not be permanent. once we restart the server, this newly created object will dissapear and we
+will later replace it with some MongoDB logic, and we will have to send the request again to see this logic.
+ */
+}
+
+
+
+
 /**No doubt we have written all the logic that is required for us, but now
  * we also will need to export this logic here and then use it to link it with the places-route.js file
  * 
@@ -104,3 +169,4 @@ const getPlaceByUserId = (req, res, next) => {
 
 exports.getPlaceById = getPlaceById;
 exports.getPlaceByUserId = getPlaceByUserId;
+exports.createPlace = createPlace;
