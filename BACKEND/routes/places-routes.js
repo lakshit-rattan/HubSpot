@@ -8,7 +8,7 @@ const placeControllers = require("../controllers/places-controller");
 
 //using a special function called router in express
 const router = express.Router();
-
+ 
 //setting the GET method for the '/' path for the router const
 //We actually now want to have a GET request, where the ID is part of the URL. the idea is that we send the request to the API '/places/p1' for eg, and that gives us the data for the place for the ID p1
 //So the ID should be endcoded in the URL(Dynamic ID). To tell express that we have a dynamic segment (which we don't know in advance), we add a colon(:) in our filter and then any identifier of our choice, which is then identified by EXPRESS as a dynammic id and works fine
@@ -22,12 +22,18 @@ const router = express.Router();
 router.get("/:pid", placeControllers.getPlaceById);
 
 //implementing the '/api/places/user/:pid' route. after the route, it is referring to the places-controller.js function pertaining to the logic that needs to be used here
-router.get("/user/:uid",placeControllers.getPlaceByUserId);
+router.get("/user/:uid",placeControllers.getPlaceByUserId)
+
 
 /**Adding a POST route. the address here will be / because we don't have any specific route here for the POST request in accordance to the table that we drew for the routes
 */
 router.post('/', placeControllers.createPlace);
 
+
+//These will not clash with the above methods, because they differ by the type of requests. above it is the GET request, and below it is a PATCH request
+router.patch('/:pid',placeControllers.updatePlace);
+
+router.delete('/:pid',placeControllers.deletePlace);
 
 
 //Exporting the const named router. this is the general syntax for exporting.
