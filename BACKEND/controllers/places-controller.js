@@ -1,7 +1,10 @@
 const HttpError = require("../models/http-error");
 
+const { validationResult } = require("express-validator");
+
 //a 3rd party npm package used to generate dynamic unique id's. there are different versions of the id's it generates, so the version we need is v4, which also has a timestamp component in it
 const { v4: uuidv4 } = require("uuid");
+const coordinatesForAddress = require("../util/location");
 
 let DUMMY_PLACES = [
   {
@@ -65,14 +68,14 @@ const getPlaceById = (req, res, next) => {
 // function getPlaceById() {...}
 // OR const getPlaceById = function() {...}
 
-const getPlaceByUserId = (req, res, next) => {
+const getPlacesByUserId = (req, res, next) => {
   const userid = req.params.uid;
 
-  const user = DUMMY_PLACES.find((p) => {
+  const places = DUMMY_PLACES.find((p) => {
     return p.creator === userid;
   });
 
-  if (!user) {
+  if (!places || places.length === 0) {
     //   res
     //     .status(404)
     //     .json({ message: "Could not find a place for the provided user-id." });
@@ -87,11 +90,21 @@ const getPlaceByUserId = (req, res, next) => {
       new HttpError("Could not find a place for the provided user id.", 404),
     );
   } else {
-    res.json({ user });
+    res.json({ places });
   }
 };
 
-const createPlace = (req, res, next) => {
+const createPlace = async (req, res, next) => {
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    console.log(errors);
+     next( new HttpError(
+      "Invalid Inputs passed, please check your data again.",
+      422
+    )); // 422 -> invalid input status code
+  }
+
   /**for the POST request, we expect to have the data inside the BODY of the post request
   Because whilst the GET requests don't have a request body, POST requests DO, and we ENCODE the data we want to send with the POST request into the BODY of the post request
   Now to get the data, out of the body, we can take help of a package called 'body-parser' we learnt about earlier. so we add a new middleware in app.js 
@@ -101,8 +114,17 @@ const createPlace = (req, res, next) => {
   */
 
   // The logic down below will later be replaces by some MongoDB logic, but temporarily working logic would be provided for the array
-  const { title, description, coordinates, address, creator } = req.body;
+  const { title, description, address, creator } = req.body;
   // short form for -> const title = req.body.title, const description = req.body.description ...............
+
+  let coordinates;
+  try{
+    coordinates = await coordinatesForAddress(address);
+  }
+  catch(error){
+    return next(error);
+  }
+  
 
   const createdPlace = {
     //uuid() generates a unique id field and stores it in the 'id' field
@@ -150,41 +172,57 @@ will later replace it with some MongoDB logic, and we will have to send the requ
  */
 };
 
-
 /**function for the PATCH request -> Update an existing place by ID
  * for a patch request, we also need a request body, because if we want to update a place's data, then we will also need to have it's existing data before making changes
- * 
+ *
  * As we will only allow the change of the title and description of the place, we will just need that in the request body, and not anything else.
  * We also will need the unique pid for every place also. We typically ENCODE the identifying criteria, which is the pid, into the URL, and the data
  * with which it should work, with the request body
-*/
+ */
 const updatePlace = (req, res, next) => {
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    console.log(errors);
+    throw new HttpError(
+      "Invalid Inputs passed, please check your data again.",
+      422,
+    ); // 422 -> invalid input status code
+  }
+
   const { title, description } = req.body;
   //getting the dynamic pid into the const
   const placeid = req.params.pid;
 
-//we check and find the place in the dummy array and return it if found.
-  const updatedPlace ={ ...DUMMY_PLACES.find(p => p.id === placeid)};
+  //we check and find the place in the dummy array and return it if found.
+  const updatedPlace = { ...DUMMY_PLACES.find((p) => p.id === placeid) };
   //Now we want to update the place in an "IMMUTABLE" way, i.e we don't want to start working on the properties like -> updatedplaces.title = title, because that would immediately change it in the dummy parent array
   //Although it won't be bad if we directly change like this in the parent array, but is considered a bad practice, because in case, we're saving our data or saving parts of our data would fail, then some parts of the data would be updated and some won't, which will result in corruption of the file
-  //So as a remedy, we first want to create a copy of place, save the copy, and once saved successfully, then change it in our parent array or place. so for that we will use the spread operator, and enclose the term in curly brackets, 
-  //this will mean that updatedPlace will get all values of dummy places, also along with the finded place 
+  //So as a remedy, we first want to create a copy of place, save the copy, and once saved successfully, then change it in our parent array or place. so for that we will use the spread operator, and enclose the term in curly brackets,
+  //this will mean that updatedPlace will get all values of dummy places, also along with the finded place
 
   //Set the entered updated value of the title and description to the one in the array
-  const placeIndex = DUMMY_PLACES.findIndex(p => p.id ===placeid);
+  const placeIndex = DUMMY_PLACES.findIndex((p) => p.id === placeid);
   updatedPlace.title = title;
   updatedPlace.description = description;
 
   DUMMY_PLACES[placeIndex] = updatedPlace;
 
-  res.status(200).json({place:updatedPlace});
+  res.status(200).json({ place: updatedPlace });
 };
 
-
-const deletePlace = (req,res,next) => {
+const deletePlace = (req, res, next) => {
   const placeId = req.params.pid;
-  DUMMY_PLACES = DUMMY_PLACES.filter(p => p.id !== placeId);
-  res.status(200).json({message : "Your Place has been deleted successfully."});
+  if (!DUMMY_PLACES.find(p => p.id = placeId)) {
+    throw new HttpError(
+      "Could not find a place for the requested id",
+      404,
+    ); //401 -> Status code for authentication failure
+  }
+  DUMMY_PLACES = DUMMY_PLACES.filter((p) => p.id !== placeId);
+  res
+    .status(200)
+    .json({ message: "Your Place has been deleted successfully." });
 };
 
 /**No doubt we have written all the logic that is required for us, but now
@@ -201,7 +239,7 @@ const deletePlace = (req,res,next) => {
  */
 
 exports.getPlaceById = getPlaceById;
-exports.getPlaceByUserId = getPlaceByUserId;
+exports.getPlacesByUserId = getPlacesByUserId;
 exports.createPlace = createPlace;
 exports.updatePlace = updatePlace;
 exports.deletePlace = deletePlace;
