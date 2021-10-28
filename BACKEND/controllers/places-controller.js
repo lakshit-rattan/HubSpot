@@ -5,8 +5,7 @@ const { validationResult } = require("express-validator");
 //a 3rd party npm package used to generate dynamic unique id's. there are different versions of the id's it generates, so the version we need is v4, which also has a timestamp component in it
 const { v4: uuidv4 } = require("uuid");
 const coordinatesForAddress = require("../util/location");
-const Place = require('../models/place');
-
+const Place = require("../models/place");
 
 let DUMMY_PLACES = [
   {
@@ -101,10 +100,12 @@ const createPlace = async (req, res, next) => {
 
   if (!errors.isEmpty()) {
     console.log(errors);
-     next( new HttpError(
-      "Invalid Inputs passed, please check your data again.",
-      422
-    )); // 422 -> invalid input status code
+    next(
+      new HttpError(
+        "Invalid Inputs passed, please check your data again.",
+        422,
+      ),
+    ); // 422 -> invalid input status code
   }
 
   /**for the POST request, we expect to have the data inside the BODY of the post request
@@ -120,24 +121,39 @@ const createPlace = async (req, res, next) => {
   // short form for -> const title = req.body.title, const description = req.body.description ...............
 
   let coordinates;
-  try{
+  try {
     coordinates = await coordinatesForAddress(address);
-  }
-  catch(error){
+  } catch (error) {
     return next(error);
   }
-  
 
   const createdPlace = new Place({
-    
-  })
+    title,
+    description,
+    address,
+    location: coordinates,
+    image:
+      "https://www.history.com/.image/ar_4:3%2Cc_fill%2Ccs_srgb%2Cfl_progressive%2Cq_auto:good%2Cw_1200/MTU3ODc3NjU2NzUxNTgwODk1/this-day-in-history-05011931---empire-state-building-dedicated.jpg",
+    creator,
+  });
 
   //we need a unique id, which we will make from an extra npm package -> uuid which is especially used to generate unique ids
 
-  // for adding the data into the database
-  DUMMY_PLACES.push(createdPlace);
+  //**NOT IN USE ANYMORE DUE TO MONGODB**
+  //for adding the data into the database
+  //DUMMY_PLACES.push(createdPlace);
   //DUMMY_PLACES.unshift(createdPlace); => if we want to push it as the first element in the array
 
+  //Instead, this used :->
+  try {
+    await createdPlace.save();
+  } catch (err) {
+    const error = new HttpError(
+      "Creating Place Failed. Please try again later.",
+      500,
+    );
+    return next(error);
+  }
   //After creating the new location successfully we now have to send back some response
   res.status(201).json({ place: createdPlace });
   //200 -> standard status code for a successfull execution in general, but when we create something new, we send back 201
@@ -209,11 +225,8 @@ const updatePlace = (req, res, next) => {
 
 const deletePlace = (req, res, next) => {
   const placeId = req.params.pid;
-  if (!DUMMY_PLACES.find(p => p.id = placeId)) {
-    throw new HttpError(
-      "Could not find a place for the requested id",
-      404,
-    ); //401 -> Status code for authentication failure
+  if (!DUMMY_PLACES.find((p) => (p.id = placeId))) {
+    throw new HttpError("Could not find a place for the requested id", 404); //401 -> Status code for authentication failure
   }
   DUMMY_PLACES = DUMMY_PLACES.filter((p) => p.id !== placeId);
   res
