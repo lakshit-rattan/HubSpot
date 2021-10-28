@@ -5,6 +5,8 @@ const { validationResult } = require("express-validator");
 //a 3rd party npm package used to generate dynamic unique id's. there are different versions of the id's it generates, so the version we need is v4, which also has a timestamp component in it
 const { v4: uuidv4 } = require("uuid");
 const coordinatesForAddress = require("../util/location");
+const Place = require('../models/place');
+
 
 let DUMMY_PLACES = [
   {
@@ -126,15 +128,9 @@ const createPlace = async (req, res, next) => {
   }
   
 
-  const createdPlace = {
-    //uuid() generates a unique id field and stores it in the 'id' field
-    id: uuidv4(),
-    title,
-    description,
-    location: coordinates,
-    address,
-    creator,
-  };
+  const createdPlace = new Place({
+    
+  })
 
   //we need a unique id, which we will make from an extra npm package -> uuid which is especially used to generate unique ids
 
