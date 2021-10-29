@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+require('dotenv').config({ path: '../BACKEND/auth.env' })
 
 /** It's our own wish that we can write here all the routes that we want. But that is simply not advised to.
  * Doing so would make the app.js file much much bigger and heavy to load. For that, what we do is, that we make a folder
@@ -61,7 +62,7 @@ app.use((error, req, res, next) => {
 
 //putting the DB condition. if there is a successful connection to the database, only then open the server at port 5000, else give back the error.
 mongoose
-.connect('mongodb+srv://Hubadmin:zWLL5d6fOkGqq6MP@cluster0.tafle.mongodb.net/places?retryWrites=true&w=majority')
+.connect(process.env.MONGO_URI)
 .then(() => {
   app.listen(5000);
 })
