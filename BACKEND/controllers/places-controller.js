@@ -34,12 +34,26 @@ let DUMMY_PLACES = [
  * we don't need to import express here, because we are not using any feature of express here
  * */
 
-const getPlaceById = (req, res, next) => {
+const getPlaceById = async (req, res, next) => {
   const placeid = req.params.pid;
 
-  const place = DUMMY_PLACES.find((p) => {
-    return p.id === placeid;
-  });
+  let place;
+  try {
+    // const place = DUMMY_PLACES.find((p) => {
+    //   return p.id === placeid;
+    // });
+    //Using below code instead of above one. findById() -> static method present inside mongoose
+    //Keep in mind that conceptually, findById() do0esn't return a promise(virtually, it does), even though catch or async on it would be deemed valid.
+    //incase we want to get a real promise from findById, we would use the exec() function, which will return a real promise from it
+    place = await Place.findById(placeid);
+  } catch (err) {
+    const error = new HttpError(
+      //This error is basically displayed when our GET request has some kind of problem within itself(eg- missing information).
+      "Something went wrong, could not find a place.",
+      500,
+    );
+    return next(error);
+  }
 
   // if place undefined then send a 404 response status
   // for that, we use the status function and json method to send a response message
@@ -58,23 +72,35 @@ const getPlaceById = (req, res, next) => {
     // error.code = 404;
     // throw error;
 
-    throw new HttpError("Could not find a place for the provided id.", 404);
-  } else {
-    //this is a special method, which sends back a JSON response to wherever it is imported, and whatever written in the json, is parsed accordingly
-    res.json({ place }); // ==> {place} = {place:place} automatically. JS
+    const error = new HttpError(
+      "Could not find a place for the provided id.",
+      404,
+    );
+    return next(error);
   }
+
+  //this is a special method, which sends back a JSON response to wherever it is imported, and whatever written in the json, is parsed accordingly
+  res.json({ place: place.toObject({ getters: true }) }); // place.toObject({ getters: true }) }) what it will do, is that the _id parameter of the DB entry, will be converted to 'id', something that we want, for our convenience while development.
+  //Why ? because mongoose adds an ID getter to every document which return the ID as a string. Such getters are usually lost when objects are called, but with getters:true, we avoid this and tell mongoose to create an id property to the newly created object.
 };
 
 //Alternatives to above ->
 // function getPlaceById() {...}
 // OR const getPlaceById = function() {...}
 
-const getPlacesByUserId = (req, res, next) => {
+const getPlacesByUserId = async (req, res, next) => {
   const userid = req.params.uid;
 
-  const places = DUMMY_PLACES.find((p) => {
-    return p.creator === userid;
-  });
+  let places;
+  try {
+    places = await Place.find({ creator: userid });
+  } catch (err) {
+    const error = new HttpError(
+      "Fetching places failed, please try again later.",
+      500,
+    );
+    return next(error);
+  }
 
   if (!places || places.length === 0) {
     //   res
@@ -91,7 +117,9 @@ const getPlacesByUserId = (req, res, next) => {
       new HttpError("Could not find a place for the provided user id.", 404),
     );
   } else {
-    res.json({ places });
+    res.json({
+      places: places.map((place) => place.toObject({ getters: true })),
+    });
   }
 };
 
@@ -191,7 +219,7 @@ will later replace it with some MongoDB logic, and we will have to send the requ
  * We also will need the unique pid for every place also. We typically ENCODE the identifying criteria, which is the pid, into the URL, and the data
  * with which it should work, with the request body
  */
-const updatePlace = (req, res, next) => {
+const updatePlace = async (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
@@ -206,29 +234,57 @@ const updatePlace = (req, res, next) => {
   //getting the dynamic pid into the const
   const placeid = req.params.pid;
 
-  //we check and find the place in the dummy array and return it if found.
-  const updatedPlace = { ...DUMMY_PLACES.find((p) => p.id === placeid) };
-  //Now we want to update the place in an "IMMUTABLE" way, i.e we don't want to start working on the properties like -> updatedplaces.title = title, because that would immediately change it in the dummy parent array
-  //Although it won't be bad if we directly change like this in the parent array, but is considered a bad practice, because in case, we're saving our data or saving parts of our data would fail, then some parts of the data would be updated and some won't, which will result in corruption of the file
-  //So as a remedy, we first want to create a copy of place, save the copy, and once saved successfully, then change it in our parent array or place. so for that we will use the spread operator, and enclose the term in curly brackets,
-  //this will mean that updatedPlace will get all values of dummy places, also along with the finded place
+  let place;
+  try {
+    place = await Place.findById(placeid);
+  } catch (err) {
+    const error = new HttpError(
+      "Something went wrong, could not update Place",
+      500,
+    );
+    return next(error);
+  }
 
-  //Set the entered updated value of the title and description to the one in the array
-  const placeIndex = DUMMY_PLACES.findIndex((p) => p.id === placeid);
-  updatedPlace.title = title;
-  updatedPlace.description = description;
+  place.title = title;
+  place.description = description;
 
-  DUMMY_PLACES[placeIndex] = updatedPlace;
+  try {
+    await place.save();
+  } catch (err) {
+    const error = new HttpError(
+      "Something went wrong, could not update Place",
+      500,
+    );
+    return next(error);
+  }
 
-  res.status(200).json({ place: updatedPlace });
+  res.status(200).json({ place: place.toObject({ getters: true }) });
 };
 
-const deletePlace = (req, res, next) => {
+const deletePlace = async (req, res, next) => {
   const placeId = req.params.pid;
-  if (!DUMMY_PLACES.find((p) => (p.id = placeId))) {
-    throw new HttpError("Could not find a place for the requested id", 404); //401 -> Status code for authentication failure
+
+  let place;
+  try {
+    place = await Place.findById(placeId);
+  } catch (err) {
+    const error = new HttpError(
+      "Something went wrong, could not delete place.",
+      500,
+    );
+    return next(error);
   }
-  DUMMY_PLACES = DUMMY_PLACES.filter((p) => p.id !== placeId);
+
+  try {
+    await place.remove();
+  } catch (err) {
+    const error = new HttpError(
+      "Something went wrong, could not delete place.",
+      500,
+    );
+    return next(error);
+  }
+
   res
     .status(200)
     .json({ message: "Your Place has been deleted successfully." });
