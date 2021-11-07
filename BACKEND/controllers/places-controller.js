@@ -223,11 +223,12 @@ const updatePlace = async (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    console.log(errors);
-    throw new HttpError(
-      "Invalid Inputs passed, please check your data again.",
-      422,
-    ); // 422 -> invalid input status code
+    return next(
+      new HttpError(
+        "Invalid Inputs passed, please check your data again.",
+        422,
+      ), // 422 -> invalid input status code
+    );
   }
 
   const { title, description } = req.body;
