@@ -10,6 +10,10 @@ const userSchema = new Schema({
   password: { type: String, required: true, minlength: 6 },
   image: { type: String, required: true },
   places: [{ type: mongoose.Types.ObjectId, required: true, ref: "Place" }],
+  /** According to our requirements, we say that one place can only belong to one user, but one user can have multiple places. 
+   * Therefore, here to tell this requirement, we will enclose the condition of places value in square breaces, which tells JS that the given condition
+   * is not for 1, but for multiple places that can belong to this field. 
+   */
 });
 
 userSchema.plugin(uniqueValidator);

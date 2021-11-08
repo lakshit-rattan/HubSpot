@@ -17,7 +17,7 @@ router.post(
   "/signup",
   [
     check("name").not().isEmpty(),
-    check("email").normalizeEmail().isEmail(),
+    check("email").normalizeEmail().isEmail(), //Test@test.com => test@test.com
     check("password").isStrongPassword(),
   ],
   userControllers.signup,

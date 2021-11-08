@@ -4,22 +4,12 @@ const { validationResult } = require("express-validator");
 
 //a 3rd party npm package used to generate dynamic unique id's. there are different versions of the id's it generates, so the version we need is v4, which also has a timestamp component in it
 const { v4: uuidv4 } = require("uuid");
+
 const coordinatesForAddress = require("../util/location");
 const Place = require("../models/place");
+const User = require("../models/user");
+const mongoose = require("mongoose");
 
-let DUMMY_PLACES = [
-  {
-    id: "p1",
-    title: "Empire State Building",
-    description: "One of the most famous Sky-Scrapers in the World",
-    location: {
-      lat: 40.7484474,
-      lng: -73.9871516,
-    },
-    address: "20 W 34th St, New York, NY 10001",
-    creator: "u1",
-  },
-];
 
 /**  the idea is that in this file, we have all the middleware functions which actually are reached for certain routes
  * so we will cut all the middleware functions from the different requests in places-routes.js file and paste them here.
@@ -91,9 +81,12 @@ const getPlaceById = async (req, res, next) => {
 const getPlacesByUserId = async (req, res, next) => {
   const userid = req.params.uid;
 
-  let places;
+  //let places;
+  // if (!places || places.length ===0) {
+  // }
+  let userWithPlaces;
   try {
-    places = await Place.find({ creator: userid });
+    userWithPlaces = await User.findById(userid).populate('places');
   } catch (err) {
     const error = new HttpError(
       "Fetching places failed, please try again later.",
@@ -102,7 +95,7 @@ const getPlacesByUserId = async (req, res, next) => {
     return next(error);
   }
 
-  if (!places || places.length === 0) {
+  if (!userWithPlaces || userWithPlaces.places.length === 0) {
     //   res
     //     .status(404)
     //     .json({ message: "Could not find a place for the provided user-id." });
@@ -118,7 +111,7 @@ const getPlacesByUserId = async (req, res, next) => {
     );
   } else {
     res.json({
-      places: places.map((place) => place.toObject({ getters: true })),
+      places: userWithPlaces.places.map((place) => place.toObject({ getters: true })),
     });
   }
 };
@@ -165,6 +158,24 @@ const createPlace = async (req, res, next) => {
     creator,
   });
 
+  let user;
+
+  try {
+    user = await User.findById(creator);
+  } catch (err) {
+    const error = new HttpError(
+      "Creating place failed. Please try again later.",
+      500,
+    );
+    return next(error);
+  }
+
+  if (!user) {
+    const error = new HttpError("Could not find user for provided ID.", 404);
+    return next(error);
+  }
+
+  console.log(user);
   //we need a unique id, which we will make from an extra npm package -> uuid which is especially used to generate unique ids
 
   //**NOT IN USE ANYMORE DUE TO MONGODB**
@@ -174,7 +185,12 @@ const createPlace = async (req, res, next) => {
 
   //Instead, this used :->
   try {
-    await createdPlace.save();
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    await createdPlace.save({ session: sess });
+    user.places.push(createdPlace);
+    await user.save({ session: sess });
+    await sess.commitTransaction();
   } catch (err) {
     const error = new HttpError(
       "Creating Place Failed. Please try again later.",
@@ -267,7 +283,7 @@ const deletePlace = async (req, res, next) => {
 
   let place;
   try {
-    place = await Place.findById(placeId);
+    place = await Place.findById(placeId).populate("creator");
   } catch (err) {
     const error = new HttpError(
       "Something went wrong, could not delete place.",
@@ -276,8 +292,19 @@ const deletePlace = async (req, res, next) => {
     return next(error);
   }
 
+  if (!place) {
+    const error = new HttpError("Could not find place for this ID.", 404);
+    return next(error);
+  }
+
   try {
-    await place.remove();
+    //await place.remove();
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    await place.remove();({ session: sess });
+    place.creator.places.pull(place);
+    await place.creator.save({ session: sess });
+    await sess.commitTransaction();
   } catch (err) {
     const error = new HttpError(
       "Something went wrong, could not delete place.",
@@ -288,7 +315,7 @@ const deletePlace = async (req, res, next) => {
 
   res
     .status(200)
-    .json({ message: "Your Place has been deleted successfully." });
+    .json({ message: "Selected Place has been deleted successfully." });
 };
 
 /**No doubt we have written all the logic that is required for us, but now
