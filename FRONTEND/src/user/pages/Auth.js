@@ -36,11 +36,35 @@ const Auth = () => {
     false,
   );
 
-  const authsubmitHandler = event => {
+  const authsubmitHandler = async event => {
     event.preventDefault();
+    //console.log(formState.inputs);
+    //Sending HTTP requests using fetch()
+    if (isLoginMode) {
 
-    console.log(formState.inputs);
+    } else {
+      try {
+        const response = await fetch('http://localhost:5000/api/users/signup', {
+          method:'POST',
+          headers:{
+            'Content-Type' : 'application/json'
+          },
+          body: JSON.stringify({
+            name : formState.inputs.name.value,
+            email : formState.inputs.email.value,
+            password: formState.inputs.password.value,
+          })
+        });
 
+       const responseData = await response.json();
+       console.log(responseData);
+      }
+      catch(err) {
+        console.log(err);
+      }
+      
+    }
+    
     //we call the login function from AuthContext using auth object to toggle our login/signup context, and hence show the required navlinks that we require separately for both the authentications.
     auth.login();
   };
