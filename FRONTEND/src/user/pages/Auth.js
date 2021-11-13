@@ -1,8 +1,10 @@
-import React, { useState,useContext } from "react";
+import React, { useState, useContext } from "react";
 
 import Card from "../../shared/components/UIElements/Card";
 import Input from "../../shared/components/FormElements/Input";
 import Button from "../../shared/components/FormElements/Button";
+import ErrorModal from "../../shared/components/UIElements/ErrorModal";
+import LoadingSpinner from "../../shared/components/UIElements/LoadingSpinner";
 
 //importing validators for the form inputs
 import {
@@ -13,14 +15,14 @@ import {
 import { useForm } from "../../shared/hooks/form-hook";
 import { AuthContext } from "../../shared/context/auth-context";
 
-
 import "./Auth.css";
 
 const Auth = () => {
   const auth = useContext(AuthContext);
 
-
   const [isLoginMode, setisLoginMode] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [Error, setError] = useState();
 
   const [formState, inputhandler, setFormData] = useForm(
     {
@@ -36,45 +38,50 @@ const Auth = () => {
     false,
   );
 
-  const authsubmitHandler = async event => {
+  const authsubmitHandler = async (event) => {
     event.preventDefault();
     //console.log(formState.inputs);
     //Sending HTTP requests using fetch()
     if (isLoginMode) {
-
     } else {
       try {
-        const response = await fetch('http://localhost:5000/api/users/signup', {
-          method:'POST',
-          headers:{
-            'Content-Type' : 'application/json'
+        setIsLoading(true);
+        const response = await fetch("http://localhost:5000/api/users/signup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            name : formState.inputs.name.value,
-            email : formState.inputs.email.value,
+            name: formState.inputs.name.value,
+            email: formState.inputs.email.value,
             password: formState.inputs.password.value,
-          })
+          }),
         });
 
-       const responseData = await response.json();
-       console.log(responseData);
-      }
-      catch(err) {
+        const responseData = await response.json();
+        console.log(responseData);
+        setIsLoading(false);
+        
+        //we call the login function from AuthContext using auth object to toggle our login/signup context, and hence show the required navlinks that we require separately for both the authentications.
+        auth.login();
+      } catch (err) {
         console.log(err);
+        setIsLoading(false);
+        setError(
+          err.message || "Something went wrong. Please Try Again Later.",
+        );
       }
-      
     }
     
-    //we call the login function from AuthContext using auth object to toggle our login/signup context, and hence show the required navlinks that we require separately for both the authentications.
-    auth.login();
+
   };
 
   const switchModehandler = () => {
     if (!isLoginMode) {
       setFormData(
         {
-            ...formState.inputs,
-          name: undefined
+          ...formState.inputs,
+          name: undefined,
         },
         formState.inputs.email.isValid && formState.inputs.password.isValid,
       );
@@ -98,30 +105,30 @@ const Auth = () => {
 
   return (
     <Card className="authentication">
+      {isLoading && <LoadingSpinner asOverlay/>}
       {isLoginMode && (
         <React.Fragment>
-      <h2>LOGIN REQUIRED</h2>
-      <hr />
-      </React.Fragment>
-      )
-      }
+          <h2>LOGIN REQUIRED</h2>
+          <hr />
+        </React.Fragment>
+      )}
       <form onSubmit={authsubmitHandler}>
         {
           //Basically telling, that if the user is not in login mode, render whatever is there in these braces, which is the signup inputs, the first being the name, along with whatever is in the form below.
           //But here we encounter a problem, if we just do this, our buttons won't work even on user input because we're adding a new input which csometimes exist, ans sometimes doesn't
           !isLoginMode && (
             <React.Fragment>
-            <h2>SIGNUP REQUIRED</h2>
-            <hr />
-            <Input
-              element="input"
-              id="name"
-              type="text"
-              label="Your Name"
-              validators={[VALIDATOR_REQUIRE()]}
-              errorText="Please enter a name."
-              onInput={inputhandler}
-            />
+              <h2>SIGNUP REQUIRED</h2>
+              <hr />
+              <Input
+                element="input"
+                id="name"
+                type="text"
+                label="Your Name"
+                validators={[VALIDATOR_REQUIRE()]}
+                errorText="Please enter a name."
+                onInput={inputhandler}
+              />
             </React.Fragment>
           )
         }
@@ -146,15 +153,17 @@ const Auth = () => {
           onInput={inputhandler}
         />
         <div className="btn">
-        <Button type="submit" disabled={!formState.isValid}>
-          {isLoginMode ? "LOGIN" : "SIGNUP"}
-        </Button>
+          <Button type="submit" disabled={!formState.isValid}>
+            {isLoginMode ? "LOGIN" : "SIGNUP"}
+          </Button>
         </div>
       </form>
       <div className="btn">
-      <Button inverse onClick={switchModehandler}>
-        {isLoginMode ? "DON'T HAVE AN ACCOUNT ? SIGN-UP" : "ALREADY HAVE AN ACCOUNT ? LOGIN"}
-      </Button>
+        <Button inverse onClick={switchModehandler}>
+          {isLoginMode
+            ? "DON'T HAVE AN ACCOUNT ? SIGN-UP"
+            : "ALREADY HAVE AN ACCOUNT ? LOGIN"}
+        </Button>
       </div>
     </Card>
   );

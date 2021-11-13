@@ -1,7 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-require('dotenv').config({ path: '../BACKEND/auth.env' })
+require("dotenv").config({ path: "../BACKEND/auth.env" });
 
 /** It's our own wish that we can write here all the routes that we want. But that is simply not advised to.
  * Doing so would make the app.js file much much bigger and heavy to load. For that, what we do is, that we make a folder
@@ -15,7 +15,26 @@ const app = express();
 
 //this will parse any incoming requests body and extract any JSON data which is in there, convert it into regular JS Data structures like objects and arrays, and then call next() automatically so that we reach the next middlewares which are our own custom routes and then also add the JSON data here.
 // So in placescontroller.js, we will now be able to get the parsed body for the POST request, which was the reason that we used it here using the req.body property
+
+/**Middleware to handle CORS errors.  
+ * CORS - Cross origin Resource Sharing. This type of error is usually faced when interacting with an API from within the localhost. 
+ * The general idea of the CORS concept is that the resources on a server can ONLY be requested by the requests, coming in from the same server. Therefore, as our backend is running on localhost:5000, the resources can ony be used if a request comes only from localhost:5000
+ * But this is not the usual case, as our front-end is hosted on localhost:3000. Even though both are running on localhost, but it's not that they are on the same port. the point is, don't think they are. just don't mix.
+ * CORS is a security concept ENFORCED by the the BROWSER only, which is why we had no problems like this with PostMan. So it's a Browser(Frontend) error.
+ * So in order to work around that, the server has to attach certain headers to the responses it sends back to the client, that the client uses, in order to use the server resources. So for that, 
+ * we then make a middleware here and declare whatever headers that are sent back along with the response by the server to the browser, which will allow the communication, neutralising the CORS errors. 
+*/
 app.use(bodyParser.json());
+
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*"); //* means allow access to all, it's an argument passed to the "Access-Control-Allow-Origin" policy.
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization",
+  );
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE')
+  next();
+});
 
 //Now there is one thing that we need to take care of. that is, according to the api's that we need, we have to have 2 SET of API's. '/api/places/....' and '/api/users/....'
 // so we have to add a FILTER on this middleware, such that it is executed only on the path that we specify. so for use(), it is not necessary to give the path filter, but we CAN.
@@ -62,11 +81,10 @@ app.use((error, req, res, next) => {
 
 //putting the DB condition. if there is a successful connection to the database, only then open the server at port 5000, else give back the error.
 mongoose
-.connect(process.env.MONGO_URI)
-.then(() => {
-  app.listen(5000);
-})
-.catch(err => {
-  console.log(err);
-});
-
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    app.listen(5000);
+  })
+  .catch((err) => {
+    console.log(err);
+  });
