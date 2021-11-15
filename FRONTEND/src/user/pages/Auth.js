@@ -22,7 +22,7 @@ const Auth = () => {
 
   const [isLoginMode, setisLoginMode] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [Error, setError] = useState();
+  const [error, setError] = useState();
 
   const [formState, inputhandler, setFormData] = useForm(
     {
@@ -59,9 +59,12 @@ const Auth = () => {
         });
 
         const responseData = await response.json();
+        if (!response.ok){
+          throw new Error(responseData.message);
+        }
         console.log(responseData);
         setIsLoading(false);
-        
+
         //we call the login function from AuthContext using auth object to toggle our login/signup context, and hence show the required navlinks that we require separately for both the authentications.
         auth.login();
       } catch (err) {
@@ -72,8 +75,6 @@ const Auth = () => {
         );
       }
     }
-    
-
   };
 
   const switchModehandler = () => {
@@ -103,9 +104,15 @@ const Auth = () => {
     setisLoginMode((prevMode) => !prevMode);
   };
 
+  const errorHandler = () => {
+    setError(null);
+  }
+
   return (
+    <React.Fragment>
+      <ErrorModal error={error} onClear={errorHandler}/>
     <Card className="authentication">
-      {isLoading && <LoadingSpinner asOverlay/>}
+      {isLoading && <LoadingSpinner asOverlay />}
       {isLoginMode && (
         <React.Fragment>
           <h2>LOGIN REQUIRED</h2>
@@ -166,6 +173,7 @@ const Auth = () => {
         </Button>
       </div>
     </Card>
+    </React.Fragment>
   );
 };
 
