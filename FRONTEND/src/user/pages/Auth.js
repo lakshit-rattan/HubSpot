@@ -14,6 +14,7 @@ import {
 } from "../../shared/util/validators";
 import { useForm } from "../../shared/hooks/form-hook";
 import { AuthContext } from "../../shared/context/auth-context";
+import { useHttpClient } from "../../shared/hooks/http-hook";
 
 import "./Auth.css";
 
@@ -21,8 +22,7 @@ const Auth = () => {
   const auth = useContext(AuthContext);
 
   const [isLoginMode, setisLoginMode] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState();
+  const {isLoading, error, sendRequest, clearError} = useHttpClient();
 
   const [formState, inputhandler, setFormData] = useForm(
     {
@@ -40,39 +40,45 @@ const Auth = () => {
 
   const authsubmitHandler = async (event) => {
     event.preventDefault();
+
     //console.log(formState.inputs);
     //Sending HTTP requests using fetch()
     if (isLoginMode) {
+      try {
+        await sendRequest(
+          "http://localhost:5000/api/users/login",
+          "POST", 
+          JSON.stringify({
+          email: formState.inputs.email.value,
+          password: formState.inputs.password.value,
+        }),
+        {
+            "Content-Type": "application/json",
+          }
+        );
+        //we call the login function from AuthContext using auth object to toggle our login/signup context, and hence show the required navlinks that we require separately for both the authentications.
+        auth.login();
+      } catch(err) {
+        console.log(err);
+      } 
+
+        
     } else {
       try {
-        setIsLoading(true);
-        const response = await fetch("http://localhost:5000/api/users/signup", {
-          method: "POST",
-          headers: {
+        await sendRequest("http://localhost:5000/api/users/signup", "POST", JSON.stringify({
+          name: formState.inputs.name.value,
+          email: formState.inputs.email.value,
+          password: formState.inputs.password.value,
+        }),
+          {
             "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: formState.inputs.name.value,
-            email: formState.inputs.email.value,
-            password: formState.inputs.password.value,
-          }),
-        });
-
-        const responseData = await response.json();
-        if (!response.ok){
-          throw new Error(responseData.message);
-        }
-        console.log(responseData);
-        setIsLoading(false);
+          }
+        );
 
         //we call the login function from AuthContext using auth object to toggle our login/signup context, and hence show the required navlinks that we require separately for both the authentications.
         auth.login();
       } catch (err) {
         console.log(err);
-        setIsLoading(false);
-        setError(
-          err.message || "Something went wrong. Please Try Again Later.",
-        );
       }
     }
   };
@@ -104,13 +110,9 @@ const Auth = () => {
     setisLoginMode((prevMode) => !prevMode);
   };
 
-  const errorHandler = () => {
-    setError(null);
-  }
-
   return (
     <React.Fragment>
-      <ErrorModal error={error} onClear={errorHandler}/>
+      <ErrorModal error={error} onClear={clearError}/>
     <Card className="authentication">
       {isLoading && <LoadingSpinner asOverlay />}
       {isLoginMode && (
