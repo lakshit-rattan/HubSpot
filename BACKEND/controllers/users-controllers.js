@@ -3,13 +3,12 @@ const { validationResult } = require("express-validator");
 const HttpError = require("../models/http-error");
 const User = require("../models/user");
 
-
 const getUsers = async (req, res, next) => {
   let users;
 
   try {
     users = await User.find({}, "-password"); //inside the find, is a special notation which is basically saying that, except for the password field, return all the fields of the of the found element from the DB
-// we can also do this like -> users = await User.find({}, "name email");
+    // we can also do this like -> users = await User.find({}, "name email");
   } catch (err) {
     const error = new HttpError(
       "Fetching users failed. Please try again later.",
@@ -32,7 +31,7 @@ const signup = async (req, res, next) => {
     ); // 422 -> invalid input status code
   }
 
-  const { name, email, password} = req.body;
+  const { name, email, password } = req.body;
 
   let existingUser;
   try {
@@ -59,7 +58,7 @@ const signup = async (req, res, next) => {
     image: "https://live.staticflickr.com/7631/26849088292_36fc52ee90_b.jpg",
     //storing the password as it is for now. Will enhance security by encrytion during file upload stages
     password,
-    places:[]
+    places: [],
   });
 
   try {
@@ -102,7 +101,10 @@ const login = async (req, res, next) => {
 
   //IF we do get past the authentication logic, for now we'll just display a message -> Logged in
 
-  res.json({ message: "Logged in !" });
+  res.json({
+    message: "Logged in !",
+    user: existingUser.toObject({ getters: true }),
+  });
 };
 
 exports.getUsers = getUsers;

@@ -22,7 +22,7 @@ const Auth = () => {
   const auth = useContext(AuthContext);
 
   const [isLoginMode, setisLoginMode] = useState(true);
-  const {isLoading, error, sendRequest, clearError} = useHttpClient();
+  const { isLoading, error, sendRequest, clearError } = useHttpClient();
 
   const [formState, inputhandler, setFormData] = useForm(
     {
@@ -45,38 +45,39 @@ const Auth = () => {
     //Sending HTTP requests using fetch()
     if (isLoginMode) {
       try {
-        await sendRequest(
+        const responseData = await sendRequest(
           "http://localhost:5000/api/users/login",
-          "POST", 
+          "POST",
           JSON.stringify({
-          email: formState.inputs.email.value,
-          password: formState.inputs.password.value,
-        }),
-        {
-            "Content-Type": "application/json",
-          }
-        );
-        //we call the login function from AuthContext using auth object to toggle our login/signup context, and hence show the required navlinks that we require separately for both the authentications.
-        auth.login();
-      } catch(err) {
-        console.log(err);
-      } 
-
-        
-    } else {
-      try {
-        await sendRequest("http://localhost:5000/api/users/signup", "POST", JSON.stringify({
-          name: formState.inputs.name.value,
-          email: formState.inputs.email.value,
-          password: formState.inputs.password.value,
-        }),
+            email: formState.inputs.email.value,
+            password: formState.inputs.password.value,
+          }),
           {
             "Content-Type": "application/json",
-          }
+          },
+        );
+        //we call the login function from AuthContext using auth object to toggle our login/signup context, and hence show the required navlinks that we require separately for both the authentications.
+        auth.login(responseData.user.id);
+      } catch (err) {
+        console.log(err);
+      }
+    } else {
+      try {
+        const responseData = await sendRequest(
+          "http://localhost:5000/api/users/signup",
+          "POST",
+          JSON.stringify({
+            name: formState.inputs.name.value,
+            email: formState.inputs.email.value,
+            password: formState.inputs.password.value,
+          }),
+          {
+            "Content-Type": "application/json",
+          },
         );
 
         //we call the login function from AuthContext using auth object to toggle our login/signup context, and hence show the required navlinks that we require separately for both the authentications.
-        auth.login();
+        auth.login(responseData.user.id);
       } catch (err) {
         console.log(err);
       }
@@ -112,69 +113,69 @@ const Auth = () => {
 
   return (
     <React.Fragment>
-      <ErrorModal error={error} onClear={clearError}/>
-    <Card className="authentication">
-      {isLoading && <LoadingSpinner asOverlay />}
-      {isLoginMode && (
-        <React.Fragment>
-          <h2>LOGIN REQUIRED</h2>
-          <hr />
-        </React.Fragment>
-      )}
-      <form onSubmit={authsubmitHandler}>
-        {
-          //Basically telling, that if the user is not in login mode, render whatever is there in these braces, which is the signup inputs, the first being the name, along with whatever is in the form below.
-          //But here we encounter a problem, if we just do this, our buttons won't work even on user input because we're adding a new input which csometimes exist, ans sometimes doesn't
-          !isLoginMode && (
-            <React.Fragment>
-              <h2>SIGNUP REQUIRED</h2>
-              <hr />
-              <Input
-                element="input"
-                id="name"
-                type="text"
-                label="Your Name"
-                validators={[VALIDATOR_REQUIRE()]}
-                errorText="Please enter a name."
-                onInput={inputhandler}
-              />
-            </React.Fragment>
-          )
-        }
+      <ErrorModal error={error} onClear={clearError} />
+      <Card className="authentication">
+        {isLoading && <LoadingSpinner asOverlay />}
+        {isLoginMode && (
+          <React.Fragment>
+            <h2>LOGIN REQUIRED</h2>
+            <hr />
+          </React.Fragment>
+        )}
+        <form onSubmit={authsubmitHandler}>
+          {
+            //Basically telling, that if the user is not in login mode, render whatever is there in these braces, which is the signup inputs, the first being the name, along with whatever is in the form below.
+            //But here we encounter a problem, if we just do this, our buttons won't work even on user input because we're adding a new input which csometimes exist, ans sometimes doesn't
+            !isLoginMode && (
+              <React.Fragment>
+                <h2>SIGNUP REQUIRED</h2>
+                <hr />
+                <Input
+                  element="input"
+                  id="name"
+                  type="text"
+                  label="Your Name"
+                  validators={[VALIDATOR_REQUIRE()]}
+                  errorText="Please enter a name."
+                  onInput={inputhandler}
+                />
+              </React.Fragment>
+            )
+          }
 
-        <Input
-          id="email"
-          element="input"
-          type="email"
-          label="E-mail"
-          validators={[VALIDATOR_EMAIL()]}
-          errorText="Please enter a valid email address."
-          onInput={inputhandler}
-        />
+          <Input
+            id="email"
+            element="input"
+            type="email"
+            label="E-mail"
+            validators={[VALIDATOR_EMAIL()]}
+            errorText="Please enter a valid email address."
+            onInput={inputhandler}
+          />
 
-        <Input
-          id="password"
-          element="input"
-          type="password"
-          label="Password"
-          validators={[VALIDATOR_MINLENGTH(5)]}
-          errorText="Please enter a valid password (at least 5 characters)."
-          onInput={inputhandler}
-        />
+          <Input
+            id="password"
+            element="input"
+            type="password"
+            label="Password"
+            validators={[VALIDATOR_MINLENGTH(5)]}
+            errorText="Please enter a valid password (at least 5 characters)."
+            onInput={inputhandler}
+          />
+          <div className="btn">
+            <Button type="submit" disabled={!formState.isValid}>
+              {isLoginMode ? "LOGIN" : "SIGNUP"}
+            </Button>
+          </div>
+        </form>
         <div className="btn">
-          <Button type="submit" disabled={!formState.isValid}>
-            {isLoginMode ? "LOGIN" : "SIGNUP"}
+          <Button inverse onClick={switchModehandler}>
+            {isLoginMode
+              ? "DON'T HAVE AN ACCOUNT ? SIGN-UP"
+              : "ALREADY HAVE AN ACCOUNT ? LOGIN"}
           </Button>
         </div>
-      </form>
-      <div className="btn">
-        <Button inverse onClick={switchModehandler}>
-          {isLoginMode
-            ? "DON'T HAVE AN ACCOUNT ? SIGN-UP"
-            : "ALREADY HAVE AN ACCOUNT ? LOGIN"}
-        </Button>
-      </div>
-    </Card>
+      </Card>
     </React.Fragment>
   );
 };

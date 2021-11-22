@@ -167,6 +167,7 @@ const createPlace = async (req, res, next) => {
       "Creating place failed. Please try again later.",
       500,
     );
+    console.log(err);
     return next(error);
   }
 
@@ -196,6 +197,7 @@ const createPlace = async (req, res, next) => {
       "Creating Place Failed. Please try again later.",
       500,
     );
+    console.log(err);
     return next(error);
   }
   //After creating the new location successfully we now have to send back some response

@@ -1,7 +1,12 @@
-import React,{useState,useCallback} from "react";
+import React, { useState, useCallback } from "react";
 
 import "./App.css";
-import { BrowserRouter as Router, Route,Redirect, Switch } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Route,
+  Redirect,
+  Switch,
+} from "react-router-dom";
 import Users from "./user/pages/users";
 import Newplace from "./places/pages/newplace";
 import MainNavigation from "./shared/components/Navigation/MainNavigation";
@@ -11,92 +16,84 @@ import Auth from "./user/pages/Auth";
 import { AuthContext } from "./shared/context/auth-context";
 
 const App = () => {
-
-  const [isLoggedin,setisLoggedin] = useState(false);
+  const [isLoggedin, setisLoggedin] = useState(false);
+  const [userId, setUserId] = useState(false);
 
   //to avoid infinite loops, dependency set to empty array shows that this object will be create just once.
-  const login = useCallback(() => {
+  const login = useCallback((uid) => {
     setisLoggedin(true);
-  },[]);
+    setUserId(uid);
+  }, []);
 
   //to avoid infinite loops, dependency set to empty array shows that this object will be create just once.
   const logout = useCallback(() => {
     setisLoggedin(false);
-  },[]);
+    setUserId(null);
+  }, []);
 
   let routes;
 
   if (isLoggedin) {
     routes = (
       <Switch>
+        <Route path="/" exact>
+          <Users />
+        </Route>
 
-      <Route path="/" exact>
-        <Users />
-      </Route>
+        <Route path="/:userId/places" exact>
+          <UserPlaces />
+        </Route>
 
-      <Route path="/:userId/places" exact>
-        <UserPlaces />
-      </Route>
+        <Route path="/places/new" exact>
+          <Newplace />
+        </Route>
 
-      <Route path="/places/new" exact>
-        <Newplace />
-      </Route>
+        <Route path="/places/:placeid">
+          <UpdatePlace />
+        </Route>
 
-      <Route path="/places/:placeid">
-        <UpdatePlace />
-      </Route>
-
-      <Redirect to="/" />
-
+        <Redirect to="/" />
       </Switch>
     );
-  }
-  else {
+  } else {
     routes = (
       <Switch>
+        <Route path="/" exact>
+          <Users />
+        </Route>
 
-      <Route path="/" exact>
-        <Users />
-      </Route>
+        <Route path="/:userId/places" exact>
+          <UserPlaces />
+        </Route>
 
-      <Route path="/:userId/places" exact>
-        <UserPlaces />
-      </Route>
+        <Route path="/auth">
+          <Auth />
+        </Route>
 
-      <Route path="/auth">
-        <Auth />
-      </Route>
-
-      <Redirect to="/auth" />
-
+        <Redirect to="/auth" />
       </Switch>
     );
   }
 
-
   return (
-
-    <AuthContext.Provider 
-    value=
-    {
-      {
-        isLoggedin: isLoggedin, 
-        login: login, 
-        logout: logout
-      }
-    }
+    <AuthContext.Provider
+      value={{
+        isLoggedin: isLoggedin,
+        userId: userId,
+        login: login,
+        logout: logout,
+      }}
     >
-    <Router>
+      <Router>
+        <MainNavigation />
 
-      <MainNavigation />
-
-      <main>{routes}</main>
-    </Router>
+        <main>{routes}</main>
+      </Router>
     </AuthContext.Provider>
   );
 };
 
-//One needs to be careful regarding the order of the routes to mention. 
+//One needs to be careful regarding the order of the routes to mention.
 //Here, if we place 'places/:placeid' route before the 'places/new', then we'll be having a problem.
 //which is, that every url which starts with 'places/ and then something after it would reach  places/:placeid route, because, say we have places/new.
 //then the 'new' will be interpreted as the dynamic placeid for the 1st route.So in order to avoid this, we will 1st route to the 'places/new' and then, if it's not the case, then route it over to the 'places/placeid'.
@@ -122,13 +119,13 @@ so, from here we will then head to navlinks.JS
 */
 
 /** Coming from Auth.JS to make separate routes for the loggedin and not loggedin states
- * take new var routes 
+ * take new var routes
  * check if isLoggedin is true,set routes to specific set of routes, else set routes to other specific set of routes
  * copy the rputes written in switch to their specific locations in the if-else block
  * Adding multiple routes together will result in react single element wrap error, so we use the <react.Fragment> tag around them and in between the <Switch> tag, we just add the router variable
  * Implying this, encounters a problem, when we go to new place tab, we see that the 'No new places here to see' errortext is being shown down the form, which we need to avoid
  * It happens, because our switch might not be working correctly, because the React.Fragment tag in the if-else might be breaking the functionality of the tag. Hence we then just replace <React.Fragment> tag with the <Switch> tag in the if-else block, and remove it down in the return statement, hence emliminating the error...
- * 
+ *
  * Our next functionality, is also to provide a LOGOUT button when the user is logged in, and hide the DELETE PLACE and EDIT PLACE button when the user is in log-out mode
  * for this we head to the Placeitem.JS - for the buttons & Navlinks.JS - for the Logout button
  */
