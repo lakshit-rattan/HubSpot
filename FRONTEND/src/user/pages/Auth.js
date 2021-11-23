@@ -5,6 +5,7 @@ import Input from "../../shared/components/FormElements/Input";
 import Button from "../../shared/components/FormElements/Button";
 import ErrorModal from "../../shared/components/UIElements/ErrorModal";
 import LoadingSpinner from "../../shared/components/UIElements/LoadingSpinner";
+import ImageUpload from "../../shared/components/FormElements/ImageUpload";
 
 //importing validators for the form inputs
 import {
@@ -40,6 +41,8 @@ const Auth = () => {
 
   const authsubmitHandler = async (event) => {
     event.preventDefault();
+
+    console.log(formState.inputs);
 
     //console.log(formState.inputs);
     //Sending HTTP requests using fetch()
@@ -90,6 +93,7 @@ const Auth = () => {
         {
           ...formState.inputs,
           name: undefined,
+          image: undefined,
         },
         formState.inputs.email.isValid && formState.inputs.password.isValid,
       );
@@ -99,6 +103,10 @@ const Auth = () => {
           ...formState.inputs,
           name: {
             value: "",
+            isValid: false,
+          },
+          image: {
+            value: null,
             isValid: false,
           },
         },
@@ -142,6 +150,9 @@ const Auth = () => {
               </React.Fragment>
             )
           }
+          {!isLoginMode && (
+            <ImageUpload center id="image" onInput={inputhandler} />
+          )}
 
           <Input
             id="email"
