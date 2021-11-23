@@ -25,12 +25,13 @@ const PlaceList = (props) => {
         <PlaceItem
           key={place.id}
           id={place.id}
-          image={place.imageurl}
+          image={place.image}
           title={place.title}
           description={place.description}
           address={place.address}
-          creatorID={place.creatorID}
+          creatorID={place.creator}
           coordinates={place.location}
+          onDelete={props.onDeletePlace}
         />
       ))}
     </ul>

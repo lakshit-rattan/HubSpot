@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from "react";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useState, useContext } from "react";
+import { useParams, useHistory } from "react-router-dom";
 
 import Input from "../../shared/components/FormElements/Input";
 import Button from "../../shared/components/FormElements/Button";
@@ -9,145 +9,140 @@ import {
 } from "../../shared/util/validators";
 import { useForm } from "../../shared/hooks/form-hook";
 import Card from "../../shared/components/UIElements/Card";
-
+import { useHttpClient } from "../../shared/hooks/http-hook";
 
 import "./PlaceForm.css";
-
-const DUMMY_PLACES = [
-  {
-    id: "p1",
-    title: "Empire State Building",
-    description: "One of the most famous SkyScrapers in the world",
-    imageurl:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/NYC_Empire_State_Building.jpg/640px-NYC_Empire_State_Building.jpg",
-    address: "20 W 34th St, New York, NY 10001, United States",
-    location: {
-      lat: 40.7484405,
-      lng: -73.9878584,
-    },
-    creator: "u1",
-  },
-  {
-    id: "p2",
-    title: "Emp. State Building",
-    description: "One of the most famous SkyScrapers in the world",
-    imageurl:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/NYC_Empire_State_Building.jpg/640px-NYC_Empire_State_Building.jpg",
-    address: "20 W 34th St, New York, NY 10001, United States",
-    location: {
-      lat: 40.7484405,
-      lng: -73.9878584,
-    },
-    creator: "u2",
-  },
-];
+import LoadingSpinner from "../../shared/components/UIElements/LoadingSpinner";
+import ErrorModal from "../../shared/components/UIElements/ErrorModal";
+import { AuthContext } from "../../shared/context/auth-context";
 
 //basically fetch the placeid from the backend and then change the information regarding the place. but for now, just work with some dummy data from userplaces.js
 const UpdatePlace = () => {
-  const [isLoading,setisLoading] = useState(true);
-
+  const auth = useContext(AuthContext);
+  const { isLoading, error, sendRequest, clearError } = useHttpClient();
+  const [loadedPlace, setLoadedPlace] = useState();
   //useparams.placeid referring to the identifier placeid in the app.js file
   const placeid = useParams().placeid;
+  const history = useHistory();
+
 
 
   const [formState, inputHandler, setFormData] = useForm(
     {
       title: {
-        value: '',
+        value: "",
         isValid: false,
       },
       description: {
-        value: '',
+        value: "",
         isValid: false,
       },
     },
-    false
+    false,
   );
 
   //find a place from the array using the id parameter
   //Later in the course, we'll be fetching this data from the backend.
   //Please keep in mind, that custom hooks, or hooks, in general HAVE TO BE used DIRECTLY into the components in React. We cannot use hooks inside of any other loops/blocks (if/else,switch,then etc.)
-  const identifiedplace = DUMMY_PLACES.find(p => p.id === placeid);
-
-
   useEffect(() => {
-    //This makes sure that if we put in the link /places/p3(an undefined id), it should not give us any error, which it will give if we put this out of the 'if' condition
-    if (identifiedplace)
-    {
-      setFormData(
-        {
-        title: {
-          value: identifiedplace.title,
-          isValid: true
-        },
-        description: {
-          value: identifiedplace.description,
-          isValid: true
-        }
-      }, 
-      true
-      );
+    const fetchPlace = async () => {
+      try {
+        const responseData = await sendRequest(
+          `http://localhost:5000/api/places/${placeid}`,
+        );
+        setLoadedPlace(responseData.place);
+        setFormData(
+          {
+            title: {
+              value: responseData.place.title,
+              isValid: true,
+            },
+            description: {
+              value: responseData.place.description,
+              isValid: true,
+            },
+          },
+          true,
+        );
+      } catch (err) {}
+    };
+    fetchPlace();
+  }, [sendRequest, placeid, setFormData]);
 
-    }
-  
-  setisLoading(false);
-}, [setFormData,identifiedplace]);
-
-
-  const updatesubmitHandler = event => {
+  const updatesubmitHandler = async (event) => {
     event.preventDefault();
-    console.log(formState.inputs);
+    try {
+      await sendRequest(
+        `http://localhost:5000/api/places/${placeid}`,
+        "PATCH",
+        JSON.stringify({
+          title: formState.inputs.title.value,
+          description: formState.inputs.description.value,
+        }),
+        {
+          "Content-Type": "application/json",
+        },
+      );
+      history.push("/" + auth.userId + '/places');
+    } catch (err) {}
   };
-
-  //Incase we don't find any place that is matching with the placeid, a fallback
-  if (!identifiedplace) {
-    return (
-      <div className="center">
-        <Card>
-        <h2 className="header">Could not find any Place matching your search !</h2>
-        </Card>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (
       <div className="center">
-        <h2>Loading...</h2>
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  //Incase we don't find any place that is matching with the placeid, a fallback
+  if (!loadedPlace && !error) {
+    return (
+      <div className="center">
+        <Card>
+          <h2 className="header">
+            Could not find any Place matching your search !
+          </h2>
+        </Card>
       </div>
     );
   }
 
   //Now say we found a place matching the placeid, then we want to render a form which we initialise with values from the place it already had.
   return (
-    <form className="place-form" onSubmit={updatesubmitHandler}>
-      <Input
-        id="title"
-        element="input"
-        type="text"
-        label="Title"
-        validators={[VALIDATOR_REQUIRE()]}
-        errorText="Please enter a valid Title."
-        onInput={inputHandler}
-        initial_value={formState.inputs.title.value}
-        initial_valid={formState.inputs.title.isValid}
-      />
+    <React.Fragment>
+      <ErrorModal error={error} onClear={clearError} />
+      {!isLoading && loadedPlace && (
+        <form className="place-form" onSubmit={updatesubmitHandler}>
+          <Input
+            id="title"
+            element="input"
+            type="text"
+            label="Title"
+            validators={[VALIDATOR_REQUIRE()]}
+            errorText="Please enter a valid Title."
+            onInput={inputHandler}
+            initial_value={loadedPlace.title}
+            initial_valid={true}
+          />
 
-      <Input
-        id="description"
-        element="textarea"
-        label="Description"
-        validators={[VALIDATOR_MINLENGTH(5)]}
-        errorText="Please enter a valid Description (minimum 5 characters)."
-        onInput={inputHandler}
-        initial_value={formState.inputs.description.value}
-        initial_valid={formState.inputs.description.isValid}
-      />
+          <Input
+            id="description"
+            element="textarea"
+            label="Description"
+            validators={[VALIDATOR_MINLENGTH(5)]}
+            errorText="Please enter a valid Description (minimum 5 characters)."
+            onInput={inputHandler}
+            initial_value={loadedPlace.description}
+            initial_valid={true}
+          />
 
-      <Button type="submit" disabled={!formState.isValid}>
-        UPDATE PLACE
-      </Button>
-    </form>
+          <Button type="submit" disabled={!formState.isValid}>
+            UPDATE PLACE
+          </Button>
+        </form>
+      )}
+    </React.Fragment>
   );
 };
 

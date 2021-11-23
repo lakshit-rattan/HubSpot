@@ -20,7 +20,7 @@ const placeSchema = new Schema({
   address: { type: String, required: true },
   location: {
     lat: { type: Number, required: true },
-    lon: { type: Number, required: true },
+    lng: { type: Number, required: true },
   },
   creator: { type: mongoose.Types.ObjectId, required: true, ref: "User" }, //ref:true allows us to establish a connection between our current place.js schema and another schema(user.js in this case). Later going to be replaced by populate method
   //Similar implementation to be followed in user.js file.
