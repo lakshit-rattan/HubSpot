@@ -42,8 +42,6 @@ const Auth = () => {
   const authsubmitHandler = async (event) => {
     event.preventDefault();
 
-    console.log(formState.inputs);
-
     //console.log(formState.inputs);
     //Sending HTTP requests using fetch()
     if (isLoginMode) {
@@ -66,17 +64,15 @@ const Auth = () => {
       }
     } else {
       try {
+        const formData = new FormData();
+        formData.append("email", formState.inputs.email.value);
+        formData.append("name", formState.inputs.name.value);
+        formData.append("password", formState.inputs.password.value);
+        formData.append("image", formState.inputs.image.value);
         const responseData = await sendRequest(
           "http://localhost:5000/api/users/signup",
           "POST",
-          JSON.stringify({
-            name: formState.inputs.name.value,
-            email: formState.inputs.email.value,
-            password: formState.inputs.password.value,
-          }),
-          {
-            "Content-Type": "application/json",
-          },
+          formData,
         );
 
         //we call the login function from AuthContext using auth object to toggle our login/signup context, and hence show the required navlinks that we require separately for both the authentications.
@@ -151,7 +147,12 @@ const Auth = () => {
             )
           }
           {!isLoginMode && (
-            <ImageUpload center id="image" onInput={inputhandler} />
+            <ImageUpload
+              center
+              id="image"
+              onInput={inputhandler}
+              errorText="Please provide an image."
+            />
           )}
 
           <Input

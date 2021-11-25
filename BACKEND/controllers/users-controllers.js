@@ -31,6 +31,8 @@ const signup = async (req, res, next) => {
     ); // 422 -> invalid input status code
   }
 
+
+
   const { name, email, password } = req.body;
 
   let existingUser;
@@ -55,7 +57,7 @@ const signup = async (req, res, next) => {
   const createdUser = new User({
     name, //JS shortcut syntax. just means =>  name:name
     email,
-    image: "https://live.staticflickr.com/7631/26849088292_36fc52ee90_b.jpg",
+    image: req.file.path,
     //storing the password as it is for now. Will enhance security by encrytion during file upload stages
     password,
     places: [],

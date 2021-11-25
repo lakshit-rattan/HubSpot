@@ -1,3 +1,8 @@
+/** Core node module which is basically used to interact with files in the database. Also allows us to delete files as per our needs. */
+const fs = require("fs");
+
+const path = require("path");
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
@@ -16,15 +21,29 @@ const app = express();
 //this will parse any incoming requests body and extract any JSON data which is in there, convert it into regular JS Data structures like objects and arrays, and then call next() automatically so that we reach the next middlewares which are our own custom routes and then also add the JSON data here.
 // So in placescontroller.js, we will now be able to get the parsed body for the POST request, which was the reason that we used it here using the req.body property
 
-/**Middleware to handle CORS errors.  
- * CORS - Cross origin Resource Sharing. This type of error is usually faced when interacting with an API from within the localhost. 
+/**Middleware to handle CORS errors.
+ * CORS - Cross origin Resource Sharing. This type of error is usually faced when interacting with an API from within the localhost.
  * The general idea of the CORS concept is that the resources on a server can ONLY be requested by the requests, coming in from the same server. Therefore, as our backend is running on localhost:5000, the resources can ony be used if a request comes only from localhost:5000
  * But this is not the usual case, as our front-end is hosted on localhost:3000. Even though both are running on localhost, but it's not that they are on the same port. the point is, don't think they are. just don't mix.
  * CORS is a security concept ENFORCED by the the BROWSER only, which is why we had no problems like this with PostMan. So it's a Browser(Frontend) error.
- * So in order to work around that, the server has to attach certain headers to the responses it sends back to the client, that the client uses, in order to use the server resources. So for that, 
- * we then make a middleware here and declare whatever headers that are sent back along with the response by the server to the browser, which will allow the communication, neutralising the CORS errors. 
-*/
+ * So in order to work around that, the server has to attach certain headers to the responses it sends back to the client, that the client uses, in order to use the server resources. So for that,
+ * we then make a middleware here and declare whatever headers that are sent back along with the response by the server to the browser, which will allow the communication, neutralising the CORS errors.
+ */
 app.use(bodyParser.json());
+
+/** There is a specific way in general in which servers and Node/Express works.
+ * By default, none of the apps in the backend are accessible from outside of the server, which is a security policy
+ * They are not accessible technically because every incoming requst on the backend goes INTO OUR MIDDLEWARE, and only the logic inside the middleware executes and 
+ * So we can't request any file. we can just go through the middlewares, and we always have a request that is either
+ * handles by a middleware, or we don't. So for some random image link, we have got no middleware. But we have to grant access to images
+ * So for that we add a new middleware down below. A general middleware, for requests that start with '/uploads/images'. 
+ * Now this request will be handled by a middleware BUILT-INSIDE the express, the "STATIC"
+ * the static middleware just returns the requested file. Static serving means you just return a file, don't read/execute it, but just return it.
+ * then we decide which file to return. for that static needs a path of the folder from which we want to serve files from without any checks
+ * so for that we need an absolute path, using the "path" module of ejs, which we then pass inside the static, where we join 2 segments, 'uploads' and 'images'
+ * Therefore, files only in this folder are returned as it is. 
+*/
+app.use("/uploads/images", express.static(path.join("uploads", "images")));
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*"); //* means allow access to all, it's an argument passed to the "Access-Control-Allow-Origin" policy.
@@ -32,7 +51,7 @@ app.use((req, res, next) => {
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content-Type, Accept, Authorization",
   );
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE')
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE");
   next();
 });
 
@@ -72,6 +91,15 @@ app.use((req, res, next) => {
  * Implementation will be shown in both ways, but later, only next() will be used because the code will be asynchronous
  */
 app.use((error, req, res, next) => {
+  //file is a property added by multer in-case of it contains an image or a binary file
+  if (req.file) {
+    //unlink is just a function to DELETE whatever is passed into it. fs property hai
+    //path is a property that exists on this file object which the multer adds to the request
+    //along with this is a callback function, which will be triggered when there is an error of some kind while deleting
+    fs.unlink(req.file.path, () => {
+      console.log(err);
+    });
+  }
   if (res.headerSent) {
     return next(error);
   }

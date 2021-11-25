@@ -1,5 +1,8 @@
 const HttpError = require("../models/http-error");
 
+//for deleting the respective place IMAGE, using the unlink() method inside it
+const fs = require('fs');
+
 const { validationResult } = require("express-validator");
 
 //a 3rd party npm package used to generate dynamic unique id's. there are different versions of the id's it generates, so the version we need is v4, which also has a timestamp component in it
@@ -9,7 +12,7 @@ const coordinatesForAddress = require("../util/location");
 const Place = require("../models/place");
 const User = require("../models/user");
 const mongoose = require("mongoose");
-
+const place = require("../models/place");
 
 /**  the idea is that in this file, we have all the middleware functions which actually are reached for certain routes
  * so we will cut all the middleware functions from the different requests in places-routes.js file and paste them here.
@@ -86,7 +89,7 @@ const getPlacesByUserId = async (req, res, next) => {
   // }
   let userWithPlaces;
   try {
-    userWithPlaces = await User.findById(userid).populate('places');
+    userWithPlaces = await User.findById(userid).populate("places");
   } catch (err) {
     const error = new HttpError(
       "Fetching places failed, please try again later.",
@@ -111,7 +114,9 @@ const getPlacesByUserId = async (req, res, next) => {
     );
   } else {
     res.json({
-      places: userWithPlaces.places.map((place) => place.toObject({ getters: true })),
+      places: userWithPlaces.places.map((place) =>
+        place.toObject({ getters: true }),
+      ),
     });
   }
 };
@@ -153,8 +158,7 @@ const createPlace = async (req, res, next) => {
     description,
     address,
     location: coordinates,
-    image:
-      "https://www.history.com/.image/ar_4:3%2Cc_fill%2Ccs_srgb%2Cfl_progressive%2Cq_auto:good%2Cw_1200/MTU3ODc3NjU2NzUxNTgwODk1/this-day-in-history-05011931---empire-state-building-dedicated.jpg",
+    image: req.file.path,
     creator,
   });
 
@@ -185,6 +189,7 @@ const createPlace = async (req, res, next) => {
   //DUMMY_PLACES.unshift(createdPlace); => if we want to push it as the first element in the array
 
   //Instead, this used :->
+
   try {
     const sess = await mongoose.startSession();
     sess.startTransaction();
@@ -299,11 +304,15 @@ const deletePlace = async (req, res, next) => {
     return next(error);
   }
 
+
+  const imagePath = place.image;
+
   try {
     //await place.remove();
     const sess = await mongoose.startSession();
     sess.startTransaction();
-    await place.remove();({ session: sess });
+    await place.remove();
+    ({ session: sess });
     place.creator.places.pull(place);
     await place.creator.save({ session: sess });
     await sess.commitTransaction();
@@ -314,6 +323,9 @@ const deletePlace = async (req, res, next) => {
     );
     return next(error);
   }
+  fs.unlink(imagePath,() => {
+    console.log(err);
+  });
 
   res
     .status(200)
