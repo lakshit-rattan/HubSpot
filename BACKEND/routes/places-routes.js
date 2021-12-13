@@ -11,10 +11,17 @@ const { check } = require("express-validator");
 const HttpError = require("../models/http-error");
 
 const placeControllers = require("../controllers/places-controller");
-const fileUpload = require('../middleware/file-upload')
+const fileUpload = require("../middleware/file-upload");
+const checkAuth = require("../middleware/check-auth");
 
 //using a special function called router in express
 const router = express.Router();
+
+/**Now there are several methods for which we need some authorisation via the use of tokens. But how will we protect them ? how will
+ * we user the token and how will we selectively protect only that routes ? the answer is, that we can add a middleware in front of
+ * the middleware and then filter the request coming before it. if we use 'router.use()' before any middleware, any request first goes through
+ * this middleware and then towards whatever is below it.
+ */
 
 //setting the GET method for the '/' path for the router const
 //We actually now want to have a GET request, where the ID is part of the URL. the idea is that we send the request to the API '/places/p1' for eg, and that gives us the data for the place for the ID p1
@@ -31,6 +38,9 @@ router.get("/:pid", placeControllers.getPlaceById);
 //implementing the '/api/places/user/:pid' route. after the route, it is referring to the places-controller.js function pertaining to the logic that needs to be used here
 router.get("/user/:uid", placeControllers.getPlacesByUserId);
 
+//using this route for authorisation implementations for using the routes below then 
+router.use(checkAuth);
+
 /**Adding a POST route. the address here will be / because we don't have any specific route here for the POST request in accordance to the table that we drew for the routes
  * Now here, we come across a new concept. we usually have used 2 arguments, one for the path and other for the middleware associated to it. But in actuality, we can have as many
  * argument middlewares as we want for our route method, and they will all get executed in L->R fashion respectively.
@@ -39,12 +49,11 @@ router.get("/user/:uid", placeControllers.getPlacesByUserId);
  */
 router.post(
   "/",
-  fileUpload.single('image'),
+  fileUpload.single("image"),
   [
     check("title").not().isEmpty(),
     check("description").isLength({ min: 5 }),
     check("address").not().isEmpty(),
-    //we will not validate the coordinates, because later, we will not get them from the client, instead we will add a function on the server to reach out to the google API to translate the address which we get, to coordinates, failure of which results in an error function
   ],
   placeControllers.createPlace,
 );

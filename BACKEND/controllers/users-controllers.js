@@ -1,4 +1,8 @@
 const { validationResult } = require("express-validator");
+//for hashing and passwords and storing them in a hashed manner
+const bcrypt = require("bcryptjs");
+//for token generation
+const jwt = require("jsonwebtoken");
 
 const HttpError = require("../models/http-error");
 const User = require("../models/user");
@@ -31,8 +35,6 @@ const signup = async (req, res, next) => {
     ); // 422 -> invalid input status code
   }
 
-
-
   const { name, email, password } = req.body;
 
   let existingUser;
@@ -54,12 +56,29 @@ const signup = async (req, res, next) => {
     return next(error);
   }
 
+  //for hashing the entered password using bcryptjs module
+  let hashedPassword;
+  //hash function takes 2 arguments, the variable of which we want ot hash, i.e the passowrd variable,
+  //and the 2nd argument it takes is the number of "SALTING ROUNDS". Here 12 is good value and it simply influences
+  //the strength of the hash and how easy or hard it is to reverse engineer it. with 12 salting rounds, we have
+  //which can't be reverse engineered but also which won't take hours to generate a hash. it also returns a promise
+  //so we will put the 'await' before it
+  try {
+    hashedPassword = await bcrypt.hash(password, 12);
+  } catch (err) {
+    const error = new HttpError(
+      "Could not create the user, Please try again later.",
+      500,
+    );
+    return next(error);
+  }
+
   const createdUser = new User({
     name, //JS shortcut syntax. just means =>  name:name
     email,
     image: req.file.path,
     //storing the password as it is for now. Will enhance security by encrytion during file upload stages
-    password,
+    password: hashedPassword,
     places: [],
   });
 
@@ -73,7 +92,24 @@ const signup = async (req, res, next) => {
     return next(error);
   }
 
-  res.status(201).json({ user: createdUser.toObject({ getters: true }) });
+  let token;
+  try {
+    token = jwt.sign(
+      { userId: createdUser.id, email: createdUser.email },
+      "supersecret_dont_share",
+      { expiresIn: "1h" },
+    );
+  } catch (err) {
+    const error = new HttpError(
+      "Signing up failed. Please try again later.",
+      500,
+    );
+    return next(error);
+  }
+
+  res
+    .status(201)
+    .json({ userId: createdUser.id, email: createdUser.email, token: token });
 };
 
 const login = async (req, res, next) => {
@@ -93,7 +129,7 @@ const login = async (req, res, next) => {
     return next(error);
   }
 
-  if (!existingUser || existingUser.password !== password) {
+  if (!existingUser) {
     const error = new HttpError(
       "Invalid Credentials, could not log you in",
       401,
@@ -101,11 +137,51 @@ const login = async (req, res, next) => {
     return next(error);
   }
 
+  //if we do find if the user exists, then we go ahead and check if the password exists
+
+  let isValidPassword = false;
+  try {
+    isValidPassword = await bcrypt.compare(password, existingUser.password);
+  } catch (err) {
+    const error = new HttpError(
+      "Could not log you in, please check your credentials and try again.",
+      500,
+    );
+    return next(error);
+  }
+
+  if (!isValidPassword) {
+    const error = new HttpError(
+      "Invalid Credentials, could not log you in",
+      401,
+    );
+    return next(error);
+  }
+
+  //token generation
+
+  let token;
+  try {
+    token = jwt.sign(
+      { userId: existingUser.id, email: existingUser.email },
+      //NOTE - use same secret key for login and signup, because otherwise the server would create confusion in validating the login and signup tokens.
+      "supersecret_dont_share",
+      { expiresIn: "1h" },
+    );
+  } catch (err) {
+    const error = new HttpError(
+      "Logging in failed. Please try again later.",
+      500,
+    );
+    return next(error);
+  }
+
   //IF we do get past the authentication logic, for now we'll just display a message -> Logged in
 
   res.json({
-    message: "Logged in !",
-    user: existingUser.toObject({ getters: true }),
+    userId: existingUser.id,
+    email: existingUser.email,
+    token: token,
   });
 };
 
