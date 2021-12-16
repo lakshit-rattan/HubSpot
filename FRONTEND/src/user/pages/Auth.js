@@ -57,8 +57,9 @@ const Auth = () => {
             "Content-Type": "application/json",
           },
         );
-        //we call the login function from AuthContext using auth object to toggle our login/signup context, and hence show the required navlinks that we require separately for both the authentications.
-        auth.login(responseData.user.id);
+        //we call the login function from AuthContext using auth object to toggle our login/signup context, and hence show the required navlinks that we require separately for both the authentications.\
+        //it recieves not just userId, but also a token sent from auth-context which we use for authorization.
+        auth.login(responseData.userId, responseData.token);
       } catch (err) {
         console.log(err);
       }
@@ -76,7 +77,8 @@ const Auth = () => {
         );
 
         //we call the login function from AuthContext using auth object to toggle our login/signup context, and hence show the required navlinks that we require separately for both the authentications.
-        auth.login(responseData.user.id);
+        //it recieves not just userId, but also a token sent from auth-context which we use for authorization.
+        auth.login(responseData.userId, responseData.token);
       } catch (err) {
         console.log(err);
       }

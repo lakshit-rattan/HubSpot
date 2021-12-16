@@ -52,7 +52,26 @@ const Newplace = () => {
       formData.append("creator", auth.userId);
       formData.append("image", formState.inputs.image.value);
 
-      await sendRequest("http://localhost:5000/api/places", "POST", formData);
+      /**sendRequest takes 3 args:
+       * 1. the link to where the request is to be sent
+       * 2. the type of request to be send (GET/POST/etc)
+       * 3. the headers argument which we deliberately send to modify the 'Authorization' token 
+       * such that it comes in a format we wrote the code for in a specific manner, ie, "Bearer TOKEN" format
+       */
+      await sendRequest("http://localhost:5000/api/places", "POST", formData, {
+        Authorization: 'Bearer ' + auth.token
+      });
+      /**But even after this,  we would be getting an error. this error would be of "OPTIONS" type
+       * "OPTIONS" being the name of the header, even though we sent a POST request here. 
+       * What is this ? This is basically a browser behaviour. Basically, apart from anything but GET requests,
+       * the browser automatically sends an OPTIONS request before it send the ACTUAL request we want to send to find out whether the 
+       * server will permit this to-be-sent request. We can't do anything about it, just that we have to know it and handle it. 
+       * The OPTIONS request has no token attached and it doesn't need to. so we will filter this in check-auth.js file
+      */
+
+
+
+
       //Dummy checking data here. Later, we'll be sending this data to the backend server for processing
       //console.log(formState.inputs);
 

@@ -16,24 +16,29 @@ import Auth from "./user/pages/Auth";
 import { AuthContext } from "./shared/context/auth-context";
 
 const App = () => {
-  const [isLoggedin, setisLoggedin] = useState(false);
+  //instead of LoggedIn and setIsLoggedIn which were used to maintain the states whether we were logged in or not, we will now use the token functions to validation of token as part of our authorisation.
+  const [token, setToken] = useState(false);
   const [userId, setUserId] = useState(false);
 
   //to avoid infinite loops, dependency set to empty array shows that this object will be create just once.
-  const login = useCallback((uid) => {
-    setisLoggedin(true);
+  //also we not only expect a userid, but also a token for authorisation, which we will manage here
+  const login = useCallback((uid, token) => {
+    //setting the token to the token recieved and userId to the uid recieved on login
+    setToken(token);
     setUserId(uid);
   }, []);
 
   //to avoid infinite loops, dependency set to empty array shows that this object will be create just once.
   const logout = useCallback(() => {
-    setisLoggedin(false);
+    //clearing both the token and userid to null after logout
+    setToken(null);
     setUserId(null);
   }, []);
 
   let routes;
 
-  if (isLoggedin) {
+  //if someone  has logged in, i.e if the token is not null
+  if (token) {
     routes = (
       <Switch>
         <Route path="/" exact>
@@ -78,7 +83,10 @@ const App = () => {
   return (
     <AuthContext.Provider
       value={{
-        isLoggedin: isLoggedin,
+        //!!token will return true if the token is not null and false if not. hence it is just for our convenience to check whether there is a user logged in or not based on it's token
+        isLoggedin: !!token,
+        //store the token itself because later upon sending some requests from the app, we need this token to attach it with outgoing requests
+        token: token,
         userId: userId,
         login: login,
         logout: logout,
