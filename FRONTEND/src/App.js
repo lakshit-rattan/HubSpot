@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 
 import "./App.css";
 import {
@@ -20,6 +20,7 @@ const App = () => {
   const [token, setToken] = useState(false);
   const [userId, setUserId] = useState(false);
 
+
   //to avoid infinite loops, dependency set to empty array shows that this object will be create just once.
   //also we not only expect a userid, but also a token for authorisation, which we will manage here
   const login = useCallback((uid, token) => {
@@ -40,7 +41,17 @@ const App = () => {
     //clearing both the token and userid to null after logout
     setToken(null);
     setUserId(null);
+    localStorage.removeItem('userData');
   }, []);
+
+
+
+  useEffect(() => {
+    const storedData = JSON.parse(localStorage.getItem('userData'));
+    if (storedData && storedData.token) {
+      login(storedData.userId, storedData.token);
+    }
+  },[login]);
 
   let routes;
 
