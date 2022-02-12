@@ -26,6 +26,13 @@ const App = () => {
     //setting the token to the token recieved and userId to the uid recieved on login
     setToken(token);
     setUserId(uid);
+     /*setItem sets a userData named object, which is not an object but we make it using the JSON.stringify method 
+    which converts anything inside it into plain text ready to be stored inside the local storage, inside which there is a userId field and also a token 
+    Now we can use this local storage data, to retain the logged in user on, even for reloads or browser shutdowns*/
+    localStorage.setItem(
+      "userData",
+      JSON.stringify({ userId: uid, token: token })
+    );
   }, []);
 
   //to avoid infinite loops, dependency set to empty array shows that this object will be create just once.

@@ -38,7 +38,11 @@ module.exports = (req, res, next) => {
      * Authorization: "Bearer TOKEN" as a value to indicate that this request bears such a token a here
      * So then we would have to split this value at the blank space, and get the 2nd part as our token
      */
-    const error = new HttpError("Authentication Failed !", 401);
+    const error = new HttpError("Authentication Failed !", 403);
     return next(error);
+
+    /** Err-401 : Means unauthorised to a particular action,meaning you might be authenticated, but still not allowed to do this action 
+     *  Err-403 : Means action forbidden in general so it's better here to put error 403 here than the previous 401.
+    */
   }
 };
