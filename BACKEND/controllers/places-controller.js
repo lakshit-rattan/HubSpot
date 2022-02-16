@@ -1,7 +1,7 @@
 const HttpError = require("../models/http-error");
 
 //for deleting the respective place IMAGE, using the unlink() method inside it
-const fs = require('fs');
+const fs = require("fs");
 
 const { validationResult } = require("express-validator");
 
@@ -143,7 +143,7 @@ const createPlace = async (req, res, next) => {
   */
 
   // The logic down below will later be replaces by some MongoDB logic, but temporarily working logic would be provided for the array
-  const { title, description, address, creator } = req.body;
+  const { title, description, address } = req.body;
   // short form for -> const title = req.body.title, const description = req.body.description ...............
 
   let coordinates;
@@ -159,13 +159,13 @@ const createPlace = async (req, res, next) => {
     address,
     location: coordinates,
     image: req.file.path,
-    creator,
+    creator: req.userData.userId,
   });
 
   let user;
 
   try {
-    user = await User.findById(creator);
+    user = await User.findById(req.userData.userId);
   } catch (err) {
     const error = new HttpError(
       "Creating place failed. Please try again later.",
@@ -338,7 +338,7 @@ const deletePlace = async (req, res, next) => {
     );
     return next(error);
   }
-  fs.unlink(imagePath,() => {
+  fs.unlink(imagePath, () => {
     console.log(err);
   });
 
