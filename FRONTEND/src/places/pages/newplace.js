@@ -57,7 +57,7 @@ const Newplace = () => {
        * 3. the headers argument which we deliberately send to modify the 'Authorization' token 
        * such that it comes in a format we wrote the code for in a specific manner, ie, "Bearer TOKEN" format
        */
-      await sendRequest("http://localhost:5000/api/places", "POST", formData, {
+      await sendRequest(process.env.REACT_APP_BACKEND_URL+"/places", "POST", formData, {
         Authorization: 'Bearer ' + auth.token
       });
       /**But even after this,  we would be getting an error. this error would be of "OPTIONS" type

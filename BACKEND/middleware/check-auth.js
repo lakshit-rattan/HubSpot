@@ -24,7 +24,7 @@ module.exports = (req, res, next) => {
     //which is done using the same "jsonwebtoken" package using certain functions like verify() etc
     //verify() takes 2 args. 1st -> the token and 2nd-> the private key used to make the token. in the end, it returns
     //the payload that was encoded into the token, which is the userid and email which we verified.
-    const decodedToken = jwt.verify(token, "supersecret_dont_share");
+    const decodedToken = jwt.verify(token, process.env.JWT_KEY);
     req.userData = { userId: decodedToken.userId };
     next();
   } catch (err) {
