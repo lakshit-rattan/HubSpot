@@ -20,3 +20,5 @@ Upon reaching the home Screen, the user first signs-up to create a user-ID. Afte
 NOTE - The user can edit and delete only it's own places, while it can view it's own as well as places of other users.
 
 When the user is on the website as a guest, then the home-screen would be flooded with the users signed up on the website and the places associated with each user. The project also supports image upload for both the user, as well as each place that the user creates.
+
+The project is available at - ![Here](spot-project-323911.web.app)
