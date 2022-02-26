@@ -21,14 +21,6 @@ const app = express();
 //this will parse any incoming requests body and extract any JSON data which is in there, convert it into regular JS Data structures like objects and arrays, and then call next() automatically so that we reach the next middlewares which are our own custom routes and then also add the JSON data here.
 // So in placescontroller.js, we will now be able to get the parsed body for the POST request, which was the reason that we used it here using the req.body property
 
-/**Middleware to handle CORS errors.
- * CORS - Cross origin Resource Sharing. This type of error is usually faced when interacting with an API from within the localhost.
- * The general idea of the CORS concept is that the resources on a server can ONLY be requested by the requests, coming in from the same server. Therefore, as our backend is running on localhost:5000, the resources can ony be used if a request comes only from localhost:5000
- * But this is not the usual case, as our front-end is hosted on localhost:3000. Even though both are running on localhost, but it's not that they are on the same port. the point is, don't think they are. just don't mix.
- * CORS is a security concept ENFORCED by the the BROWSER only, which is why we had no problems like this with PostMan. So it's a Browser(Frontend) error.
- * So in order to work around that, the server has to attach certain headers to the responses it sends back to the client, that the client uses, in order to use the server resources. So for that,
- * we then make a middleware here and declare whatever headers that are sent back along with the response by the server to the browser, which will allow the communication, neutralising the CORS errors.
- */
 app.use(bodyParser.json());
 
 /** There is a specific way in general in which servers and Node/Express works.
@@ -45,6 +37,15 @@ app.use(bodyParser.json());
 */
 app.use("/uploads/images", express.static(path.join("uploads", "images")));
 
+
+/**Middleware to handle CORS errors.
+ * CORS - Cross origin Resource Sharing. This type of error is usually faced when interacting with an API from within the localhost.
+ * The general idea of the CORS concept is that the resources on a server can ONLY be requested by the requests, coming in from the same server. Therefore, as our backend is running on localhost:5000, the resources can ony be used if a request comes only from localhost:5000
+ * But this is not the usual case, as our front-end is hosted on localhost:3000. Even though both are running on localhost, but it's not that they are on the same port. the point is, don't think they are. just don't mix.
+ * CORS is a security concept ENFORCED by the the BROWSER only, which is why we had no problems like this with PostMan. So it's a Browser(Frontend) error.
+ * So in order to work around that, the server has to attach certain headers to the responses it sends back to the client, that the client uses, in order to use the server resources. So for that,
+ * we then make a middleware here and declare whatever headers that are sent back along with the response by the server to the browser, which will allow the communication, neutralising the CORS errors.
+ */
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*"); //* means allow access to all, it's an argument passed to the "Access-Control-Allow-Origin" policy.
   res.setHeader(
