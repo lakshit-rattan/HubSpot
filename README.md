@@ -22,4 +22,4 @@ NOTE - The user can edit and delete only it's own places, while it can view it's
 When the user is on the website as a guest, then the home-screen would be flooded with the users signed up on the website and the places associated with each user. The project also supports image upload for both the user, as well as each place that the user creates. \
 The project also supports both types of authentication features, i.e Sign-up and Login.
 
-You can access the project [Here](spot-project-323911.web.app).
+You can access the project [Here](https://spot-project-323911.web.app).
